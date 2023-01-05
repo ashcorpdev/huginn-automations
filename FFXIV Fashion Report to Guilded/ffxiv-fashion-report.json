@@ -1,0 +1,108 @@
+{
+  "schema_version": 1,
+  "name": "FFXIV Fashion Report",
+  "description": "This scenario will grab the latest post from Kaiyoko's Reddit account to pull the latest fashion report image out.",
+  "source_url": false,
+  "guid": "c53d41dca42c65bddf2640c15a199a76",
+  "tag_fg_color": "#ffffff",
+  "tag_bg_color": "#5bc0de",
+  "icon": "scissors",
+  "exported_at": "2023-01-05T14:08:00Z",
+  "agents": [
+    {
+      "type": "Agents::TriggerAgent",
+      "name": "Check it's a Fashion Report Post",
+      "disabled": false,
+      "guid": "4ff60966d008535e6cd5f192f3f29a4d",
+      "options": {
+        "expected_receive_period_in_days": "2",
+        "keep_event": "true",
+        "rules": [
+          {
+            "type": "regex",
+            "value": "Full Details",
+            "path": "title"
+          }
+        ],
+        "message": "Looks like your pattern matched in '{{title}}'!"
+      },
+      "keep_events_for": 0,
+      "propagate_immediately": true
+    },
+    {
+      "type": "Agents::WebsiteAgent",
+      "name": "Latest Reddit Submission from Kaiyoko",
+      "disabled": false,
+      "guid": "92aad1a0190508dc4a6b92228cc6a7b8",
+      "options": {
+        "expected_update_period_in_days": "6",
+        "url": "https://www.reddit.com/user/kaiyoko/submitted/.json",
+        "type": "json",
+        "mode": "on_change",
+        "extract": {
+          "title": {
+            "path": "$.data.children[2].data.title"
+          },
+          "url": {
+            "path": "$.data.children[2].data.url"
+          },
+          "permalink": {
+            "path": "$.data.children[2].data.permalink"
+          }
+        }
+      },
+      "schedule": "every_1h",
+      "keep_events_for": 604800,
+      "propagate_immediately": false
+    },
+    {
+      "type": "Agents::PostAgent",
+      "name": "Post Image to Guilded Channel",
+      "disabled": false,
+      "guid": "b90645edf37553e065b6f79369ac8fe4",
+      "options": {
+        "post_url": "{% credential guilded_fashion_report_webhook_url %}",
+        "expected_receive_period_in_days": "1",
+        "content_type": "json",
+        "method": "post",
+        "payload": {
+          "embeds": [
+            {
+              "title": "{{title}}",
+              "url": "https://reddit.com{{permalink}}",
+              "image": {
+                "url": "{{url}}"
+              },
+              "footer": {
+                "icon_url": "https://www.redditstatic.com/desktop2x/img/favicon/favicon-32x32.png",
+                "text": "/u/kaiyoko | Reddit"
+              },
+              "description": "This week's fashion report is now available! [Click here to view the full resolution image.]({{url}})"
+            }
+          ]
+        },
+        "headers": {
+        },
+        "emit_events": "true",
+        "no_merge": "false",
+        "output_mode": "clean"
+      },
+      "schedule": "never",
+      "keep_events_for": 604800,
+      "propagate_immediately": false
+    }
+  ],
+  "links": [
+    {
+      "source": 0,
+      "receiver": 2
+    },
+    {
+      "source": 1,
+      "receiver": 0
+    }
+  ],
+  "control_links": [
+
+  ]
+}
